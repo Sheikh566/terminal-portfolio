@@ -1,0 +1,10 @@
+body {
+    background-color: #2b2b2b;
+    height: 97vh;
+}
+
+* {
+    font-family: 'Cascadia Code', monospace;
+    color: #2eff51;
+    font-size: 1rem;
+}

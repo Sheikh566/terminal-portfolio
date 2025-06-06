@@ -1,0 +1,38 @@
+{
+  "help": {
+    "description": "List all available commands",
+    "usage": "help"
+  },
+  "clear": {
+    "description": "Clear the terminal",
+    "usage": "clear"
+  },
+  "echo": {
+    "description": "Print a message to the terminal",
+    "usage": "echo [message]"
+  },
+  "about": {
+    "description": "A brief introduction of me",
+    "usage": "about"
+  },
+  "skills": {
+    "description": "List all my skills",
+    "usage": "skills"
+  },
+  "education": {
+    "description": "List all my education",
+    "usage": "education"
+  },
+  "projects": {
+    "description": "List all my projects",
+    "usage": "projects"
+  },
+  "blogs": {
+    "description": "List all my blogs",
+    "usage": "blogs"
+  },
+  "contact": {
+    "description": "Contact me",
+    "usage": "contact"
+  }
+}
