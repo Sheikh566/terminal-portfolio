@@ -34,5 +34,9 @@
   "contact": {
     "description": "Contact me",
     "usage": "contact"
+  },
+  "dino": {
+    "description": "Play the ASCII Dino game",
+    "usage": "dino"
   }
 }

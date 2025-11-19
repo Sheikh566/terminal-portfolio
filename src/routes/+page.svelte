@@ -7,10 +7,17 @@
   import { handleProjects } from "$lib/projects";
   import { handleBlogs } from "$lib/blogs";
   import { handleContact } from "$lib/contact";
+  import { DinoGame } from "$lib/games/dino-logic";
 
-  let commandHistory: Array<{ command: string | null, output: string }> = $state([
-    { command: null, output: intro() },
+  let commandHistory: Array<{ id: string, command: string | null, output: string }> = $state([
+    { id: crypto.randomUUID(), command: null, output: intro() },
   ]);
+  
+  // Game state
+  let isPlaying = $state(false);
+  let gameOutput = $state("");
+  let game: DinoGame | null = null;
+  let animationFrameId: number;
 
   function handleEnter(event: KeyboardEvent) {
     if (event.key === "Enter") {
@@ -46,6 +53,9 @@
       case "contact":
         output = handleContact();
         break
+      case "dino":
+        startDinoGame();
+        return; // Don't add to history immediately
       case "clear":
         commandHistory = [];
         return;
@@ -59,8 +69,64 @@
         break;
     }
 
-    commandHistory = [...commandHistory, { command, output }];
+    commandHistory = [...commandHistory, { id: crypto.randomUUID(), command, output }];
   }
+
+  function startDinoGame() {
+    isPlaying = true;
+    game = new DinoGame();
+    gameLoop();
+  }
+
+  function stopDinoGame() {
+    isPlaying = false;
+    if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    game = null;
+    // Add a small delay to focus back on terminal input
+    setTimeout(() => {
+        document.getElementById("terminal")?.focus();
+    }, 10);
+  }
+
+  function gameLoop() {
+    if (!game || !isPlaying) return;
+
+    game.tick();
+    gameOutput = game.getFrame();
+
+    if (!game.isGameOver()) {
+        // Slow down the game loop slightly for better visibility if needed
+        // For now, requestAnimationFrame runs at ~60fps which might be fast for this tick logic
+        // We can throttle in tick() or here. DinoGame has some throttle via frameCount % 30 for obstacles.
+        // Let's trust tick logic.
+        animationFrameId = requestAnimationFrame(gameLoop);
+    } else {
+        // Game Over state - still render one last frame (done above)
+        // We keep isPlaying true so user sees Game Over screen
+        // They can press Q or R
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+  }
+
+  function handleGameKey(event: KeyboardEvent) {
+    if (!isPlaying || !game) return;
+
+    // Prevent default scrolling for game keys
+    if (["ArrowUp", " ", "ArrowDown"].includes(event.key)) {
+        event.preventDefault();
+    }
+
+    if (event.key === "q" || event.key === "Q" || event.key === "Escape") {
+        stopDinoGame();
+    } else if (event.key === "r" || event.key === "R") {
+        if (game.isGameOver()) {
+            game.reset();
+        }
+    } else if (event.key === " " || event.key === "ArrowUp") {
+        game.jump();
+    }
+  }
+
 
   // Format output to make URLs clickable
   function formatOutput(text: string): string {
@@ -72,34 +138,44 @@
   // $inspect(commandHistory);
 </script>
 
+<svelte:window onkeydown={isPlaying ? handleGameKey : undefined} />
+
+<!-- Main Container -->
 <div 
   role="textbox" 
   tabindex="0"
-  onclick={() => document.getElementById("terminal")?.focus()}
-  onkeydown={(e) => e.key === 'Enter' && document.getElementById("terminal")?.focus()}
+  onclick={() => !isPlaying && document.getElementById("terminal")?.focus()}
+  onkeydown={(e) => !isPlaying && e.key === 'Enter' && document.getElementById("terminal")?.focus()}
 >
-  {#each commandHistory as { command, output }}
-    {#if command !== null}
-      <div class="command">
-        <span>$ {command}</span>
-      </div>
-    {/if}
-    <div class="output">
-      {@html formatOutput(output)}
+  {#if isPlaying}
+    <div class="game-container">
+        <pre>{gameOutput}</pre>
     </div>
-  {/each}
+  {:else}
+    {#each commandHistory as { id, command, output } (id)}
+        {#if command !== null}
+        <div class="command">
+            <span>$ {command}</span>
+        </div>
+        {/if}
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+        <div class="output">
+        {@html formatOutput(output)}
+        </div>
+    {/each}
 
-  <div>
-    <span>$</span>
-    <input
-      type="text"
-      id="terminal"
-      placeholder=""
-      autocomplete="off"
-      onkeydown={handleEnter}
-      onblur={(e) => (e.target as HTMLInputElement)?.focus()}
-    />
-  </div>
+    <div>
+        <span>$</span>
+        <input
+        type="text"
+        id="terminal"
+        placeholder=""
+        autocomplete="off"
+        onkeydown={handleEnter}
+        onblur={(e) => (e.target as HTMLInputElement)?.focus()}
+        />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -112,6 +188,16 @@
 
   .command, .output {
     white-space: pre;
+  }
+
+  .game-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 80vh;
+    font-family: monospace;
+    white-space: pre;
+    color: #2eff51;
   }
 
   /* Style for links */
