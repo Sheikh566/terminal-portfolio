@@ -15,6 +15,10 @@
     "description": "A brief introduction of me",
     "usage": "about"
   },
+  "experience": {
+    "description": "Work experience and highlights",
+    "usage": "experience"
+  },
   "skills": {
     "description": "List all my skills",
     "usage": "skills"

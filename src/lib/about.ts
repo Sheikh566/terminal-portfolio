@@ -1,12 +1,9 @@
 export function handleAbout() {
-  return `  Hi, I am Sheikh Abdullah, a passionate software engineer and aspiring software architect
-with over 3 years of experience designing and building scalable, robust server-side 
-applications. I excel at developing RESTful APIs using frameworks such as ExpressJS, NestJS,
-and Laravel, and have successfully tackled projects involving complex business logic, real-time
-communication, and intensive data processing. My expertise includes designing scalable database
-schemas, pinpointing and resolving performance bottlenecks, and implementing effective query
-optimizations.
-  I am committed to continuous learning and regularly explore emerging technologies to refine
-my craft. Leveraging AI-powered tools like GitHub Copilot, I automate repetitive tasks and
-streamline development processes to boost productivity and efficiency.`;
+  return `  Hi, I am Sheikh Abdullah, a Backend Engineer with 4 years of experience building
+high-performance distributed systems in Go, Node.js (NestJS), and PostgreSQL. I specialize
+in query optimization — achieving 98%+ reduction in query times — and deploying production
+workloads on AWS (ECS, Fargate).
+  I have a strong interest in systems internals, open-source, and concurrency. I use
+AI-driven development tools including GitHub Copilot and Cursor since 2023 to streamline
+workflows and ship faster without sacrificing code quality.`;
 }

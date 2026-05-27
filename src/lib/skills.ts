@@ -1,10 +1,9 @@
 export function handleSkills() {
   return `
-Languages: Typescript, Go, C++, SQL, HTML
-Technologies/Frameworks: ExpressJS, NestJS, TypeORM, RabbitMQ, WebSocket, SQLc, Svelte
-Database: PostgreSQL, Redis, MongoDB
-Developer Tools: Git, BitBucket, WSL, Docker, PM2, Github Copilot
-Cloud: AWS EC2, S3, Lambda, SQS, SNS
-Testing: Jest, Swagger, Postman, Requestly
+Languages: Go (Golang), TypeScript, SQL, Python
+Backend: NestJS, ExpressJS, TypeORM, RabbitMQ, WebSocket, REST APIs
+Databases: PostgreSQL (Advanced Optimization), Redis, MongoDB
+DevOps & Cloud: AWS (EC2, ECS Fargate, Lambda, CodePipeline, S3), Docker, Linux, CI/CD
+Also: Svelte (this site), PostgreSQL Full-Text Search
   `;
 }
