@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import { intro } from "$lib/intro";
   import { handleHelp } from "$lib/help";
   import { handleAbout } from "$lib/about";
@@ -131,6 +132,10 @@
     }
   }
 
+
+  onMount(() => {
+    document.getElementById("terminal")?.focus();
+  });
 
   // Format output to make URLs clickable
   function formatOutput(text: string): string {
