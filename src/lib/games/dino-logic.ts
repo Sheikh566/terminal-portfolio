@@ -9,11 +9,14 @@ export class DinoGame {
     private highScore = 0;
     private gameOver = false;
     private frameCount = 0;
+    private animationFrame = 0;
 
     private readonly GRAVITY = 0.4;
     private readonly JUMP_FORCE = -2.0; // Reduced jump height and speed
     private readonly GROUND_Y = 0;
     private readonly OBSTACLE_SPEED = 1;
+    private readonly LOGIC_EVERY_N_FRAMES = 3;
+    private readonly MIN_OBSTACLE_DISTANCE = 22;
     private readonly STORAGE_KEY = 'dino_highscore';
 
     constructor() {
@@ -47,6 +50,7 @@ export class DinoGame {
         this.score = 0;
         this.gameOver = false;
         this.frameCount = 0;
+        this.animationFrame = 0;
     }
 
     jump() {
@@ -56,7 +60,21 @@ export class DinoGame {
         }
     }
 
+    private canSpawnObstacle(): boolean {
+        if (this.obstacles.length === 0) {
+            return true;
+        }
+
+        const rightmostObstacle = Math.max(...this.obstacles);
+        return this.width - rightmostObstacle >= this.MIN_OBSTACLE_DISTANCE;
+    }
+
     tick() {
+        this.animationFrame++;
+        if (this.animationFrame % this.LOGIC_EVERY_N_FRAMES !== 0) {
+            return;
+        }
+
         if (this.gameOver) return;
 
         this.frameCount++;
@@ -74,7 +92,7 @@ export class DinoGame {
         }
 
         // Obstacles
-        if (this.frameCount % 30 === 0 && Math.random() > 0.5) {
+        if (this.frameCount % 10 === 0 && Math.random() > 0.5 && this.canSpawnObstacle()) {
             this.obstacles.push(this.width);
         }
 
