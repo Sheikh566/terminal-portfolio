@@ -2,6 +2,7 @@
   import { intro } from "$lib/intro";
   import { handleHelp } from "$lib/help";
   import { handleAbout } from "$lib/about";
+  import { handleExperience } from "$lib/experience";
   import { handleSkills } from "$lib/skills";
   import { handleEducation } from "$lib/education";
   import { handleProjects } from "$lib/projects";
@@ -37,6 +38,9 @@
         break;
       case "about":
         output = handleAbout();
+        break;
+      case "experience":
+        output = handleExperience();
         break;
       case "skills":
         output = handleSkills();
