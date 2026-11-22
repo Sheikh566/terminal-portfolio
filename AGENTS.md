@@ -22,6 +22,7 @@ Before you finish a change, run `yarn check`, `yarn test` and `yarn build`. All 
 - `src/routes/+page.svelte`: the terminal UI. It holds the command history, the input, and the dino game loop.
 - `src/routes/+layout.ts` / `+layout.svelte`: SEO/Open Graph meta. `prerender = true`, so the whole site is static HTML.
 - `src/lib/terminal.ts`: `runCommand()` maps input to a `CommandResult`. `formatOutput()` escapes output and linkifies URLs before it's rendered with `{@html}`.
+- `src/lib/completion.ts`: command autocompletion. It shows a dimmed suggestion while typing (→ or a tap accepts it) and does bash-style Tab completion. Command names come from `commands.json`, so new commands are completed automatically.
 - `src/lib/<command>.ts`: one file per text command, each returning a plain string.
 - `src/lib/commands.json`: the command list shown by `help`.
 - `src/lib/games/dino-logic.ts`: the `DinoGame` state machine. Each `tick()` advances it one fixed step. The page drives timing (20 steps/s, fixed timestep).

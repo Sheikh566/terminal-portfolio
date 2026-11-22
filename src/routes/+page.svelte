@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import { intro } from "#lib/intro.ts";
   import { runCommand, formatOutput } from "#lib/terminal.ts";
+  import { acceptSuggestion, ghostSuggestion, tabComplete } from "#lib/completion.ts";
   import { DinoGame } from "#lib/games/dino-logic.ts";
 
   let commandHistory: Array<{ id: string, command: string | null, output: string }> = $state([
@@ -18,12 +19,37 @@
   const STEP_MS = 50; // 20 game steps per second
   const MAX_FRAME_MS = 250;
 
-  function handleEnter(event: KeyboardEvent) {
+  // Terminal input and its autosuggestion
+  let inputValue = $state("");
+  let inputEl: HTMLInputElement | undefined = $state();
+  const ghost = $derived(ghostSuggestion(inputValue));
+
+  function handleInputKey(event: KeyboardEvent) {
+    const input = event.target as HTMLInputElement;
+
     if (event.key === "Enter") {
-      const input = event.target as HTMLInputElement;
-      processCommand(input.value);
-      input.value = "";
+      processCommand(inputValue);
+      inputValue = "";
+    } else if (event.key === "Tab" && !event.shiftKey && inputValue.trim() !== "") {
+      // Tab completes like bash. An empty input lets Tab move focus as usual.
+      event.preventDefault();
+      const { value, options } = tabComplete(inputValue);
+      inputValue = value;
+      if (options.length > 0) {
+        commandHistory = [...commandHistory, { id: crypto.randomUUID(), command: inputValue, output: options.join("  ") }];
+      }
+    } else if (event.key === "ArrowRight" && ghost && input.selectionStart === inputValue.length) {
+      // → at the end of the line accepts the ghost suggestion, like fish
+      event.preventDefault();
+      inputValue = acceptSuggestion(inputValue);
     }
+  }
+
+  // Tapping the ghost text accepts it (phones have no Tab or → key)
+  function acceptGhostFromPointer(event: PointerEvent) {
+    event.preventDefault(); // keep focus (and the phone keyboard) on the input
+    inputValue = acceptSuggestion(inputValue);
+    inputEl?.focus();
   }
 
   function processCommand(command: string) {
@@ -169,30 +195,78 @@
         </div>
     {/each}
 
-    <div>
+    <div class="prompt">
         <span>$</span>
-        <input
-        type="text"
-        id="terminal"
-        placeholder=""
-        aria-label="Terminal command"
-        autocomplete="off"
-        autocapitalize="none"
-        autocorrect="off"
-        spellcheck="false"
-        enterkeyhint="send"
-        onkeydown={handleEnter}
-        />
+        <span class="input-wrap">
+          <input
+          type="text"
+          id="terminal"
+          placeholder=""
+          aria-label="Terminal command"
+          aria-describedby="terminal-hint"
+          autocomplete="off"
+          autocapitalize="none"
+          autocorrect="off"
+          spellcheck="false"
+          enterkeyhint="send"
+          bind:value={inputValue}
+          bind:this={inputEl}
+          onkeydown={handleInputKey}
+          />
+          <!-- Ghost suggestion: invisible copy of the typed text, then the dimmed rest of the command -->
+          <span class="ghost-layer" aria-hidden="true"><span class="typed">{inputValue}</span>{#if ghost}<!-- svelte-ignore a11y_no_static_element_interactions --><span class="ghost" onpointerdown={acceptGhostFromPointer}>{ghost}</span>{/if}</span>
+        </span>
+        <span id="terminal-hint" class="sr-only">Tab completes commands. Right arrow accepts the suggestion.</span>
     </div>
   {/if}
 </div>
 
 <style>
+  .prompt {
+    display: flex;
+    gap: 0.5ch;
+  }
+
+  .input-wrap {
+    position: relative;
+    flex: 1;
+  }
+
   #terminal {
     background-color: transparent;
     border: none;
     outline: none;
-    width: 97%;
+    padding: 0;
+    width: 100%;
+    line-height: inherit;
+  }
+
+  /* Sits exactly over the input text; both use the same monospace font and size */
+  .ghost-layer {
+    position: absolute;
+    inset: 0;
+    white-space: pre;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .typed {
+    visibility: hidden;
+  }
+
+  .ghost {
+    opacity: 0.4;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .command, .output {
