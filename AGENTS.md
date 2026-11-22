@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Terminal-style personal portfolio ("SheikhOS"). A single page where visitors type commands (`help`, `about`, `projects`, `dino`, ...) and get text output. Built with SvelteKit 3 + Svelte 5 and deployed to Cloudflare Workers.
+Terminal-style personal portfolio ("SheikhOS"). A single page where visitors type commands (`help`, `about`, `projects`, `dino`, ...) and get text output. Built with SvelteKit 3 + Svelte 5 and deployed to Cloudflare Pages.
 
 ## Commands
 
@@ -13,7 +13,7 @@ Package manager is **Yarn 4** (pinned via `packageManager`). If `yarn` isn't on 
 | Type check | `yarn check` |
 | Tests | `yarn test` (Vitest, `src/**/*.test.ts`) |
 | Build | `yarn build` |
-| Deploy | `yarn build && npx wrangler deploy` |
+| Deploy | Push to `master`. The Cloudflare Pages Git integration builds and deploys it. |
 
 Before you finish a change, run `yarn check`, `yarn test` and `yarn build`. All three must pass.
 
@@ -56,6 +56,10 @@ Check with `grep -rn "SheikhOS v\|\"version\"" src package.json`. All three must
 
 ## Deployment notes
 
-- `@sveltejs/adapter-cloudflare` v9 writes `.svelte-kit/cloudflare/{worker,client}` plus a generated `wrangler.json`, and points `.wrangler/deploy/config.json` at it. Deploy with `npx wrangler deploy` from the repo root. There is no checked-in wrangler config.
-- **Why Wrangler, not the `cf` CLI:** as of `cf` 1.0.0-rc.2, `cf init`/`cf deploy` stop with "cf does not support SvelteKit projects yet". Keep deploying with Wrangler until `cf` supports SvelteKit. Don't add `cloudflare.config.ts` or run `cf build`/`cf deploy` here. `cf` resource commands (DNS, zones) are fine to use.
+- **Cloudflare Pages, via `@sveltejs/adapter-static`.** `adapter-cloudflare` v9+ targets Workers only and does not support Pages. Using it broke the Pages build once (see the v1.3.1 commit). Don't switch back to `adapter-cloudflare` unless the project is also moved from Pages to Workers Builds.
+- The site must stay fully prerendered (`prerender = true` in `src/routes/+layout.ts`). No server routes, form actions or `+server.ts` endpoints: there is no server at runtime.
+- The build writes to `.svelte-kit/cloudflare`, the Pages project's build output directory. Don't change `pages` in `vite.config.ts` without changing the Pages setting too.
+- `static/_headers` sets Pages caching (hashed `/_app/immutable/*` files are cached for a year). `404.html` is generated as the not-found page.
+- Before pushing a dependency or config change, simulate the Pages build from a clean clone: `yarn install --immutable && yarn build`, then check that `.svelte-kit/cloudflare/index.html` exists.
+- **The `cf` CLI:** as of `cf` 1.0.0-rc.2, `cf init` stops with "cf does not support SvelteKit projects yet". Don't add `cloudflare.config.ts`. `cf` resource commands (DNS, zones) are fine to use.
 - `paths.origin` in `vite.config.ts` (`https://sabdullah.com`) is used for canonical and OG URLs in the prerendered HTML. Update it if the domain changes.

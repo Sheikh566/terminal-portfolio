@@ -1,0 +1,11 @@
+# Cloudflare Pages headers (https://developers.cloudflare.com/pages/configuration/headers/)
+# Same caching adapter-cloudflare used to generate.
+
+/_app/*
+  X-Robots-Tag: noindex
+  Cache-Control: no-cache
+
+# Hashed build files never change, so cache them for a year
+/_app/immutable/*
+  ! Cache-Control
+  Cache-Control: public, immutable, max-age=31536000
