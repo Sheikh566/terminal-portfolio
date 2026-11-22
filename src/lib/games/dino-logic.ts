@@ -1,3 +1,5 @@
+const snap = (n: number) => Math.round(n * 1e6) / 1e6;
+
 export class DinoGame {
     private width = 60;
     private height = 10;
@@ -9,35 +11,48 @@ export class DinoGame {
     private highScore = 0;
     private gameOver = false;
     private frameCount = 0;
-    private animationFrame = 0;
 
     private readonly GRAVITY = 0.4;
     private readonly JUMP_FORCE = -2.0; // Reduced jump height and speed
     private readonly GROUND_Y = 0;
     private readonly OBSTACLE_SPEED = 1;
-    private readonly LOGIC_EVERY_N_FRAMES = 3;
     private readonly MIN_OBSTACLE_DISTANCE = 22;
     private readonly STORAGE_KEY = 'dino_highscore';
+    private readonly DINO_X = 2;
 
     constructor() {
         this.loadHighScore();
         this.reset();
     }
 
-    private loadHighScore() {
-        if (typeof localStorage !== 'undefined') {
-            const saved = localStorage.getItem(this.STORAGE_KEY);
-            if (saved) {
-                this.highScore = parseInt(saved, 10);
-            }
+    // localStorage can be missing (SSR) or throw (blocked storage, private mode).
+    // The high score is a nice-to-have, so storage failures are ignored.
+    private readStoredHighScore(): number {
+        try {
+            const saved = Number.parseInt(localStorage.getItem(this.STORAGE_KEY) ?? '', 10);
+            return Number.isFinite(saved) && saved > 0 ? saved : 0;
+        } catch {
+            return 0;
         }
     }
 
-    private saveHighScore() {
-        if (this.score > this.highScore) {
-            this.highScore = this.score;
-            if (typeof localStorage !== 'undefined') {
+    private loadHighScore() {
+        this.highScore = this.readStoredHighScore();
+    }
+
+    /**
+     * Save the best of this run, this session and what's stored. Re-reading storage
+     * means a stale tab can't overwrite a higher score set in another tab.
+     * Call on game over and when the player quits mid-run.
+     */
+    commitHighScore() {
+        const stored = this.readStoredHighScore();
+        this.highScore = Math.max(this.highScore, this.score, stored);
+        if (this.highScore > stored) {
+            try {
                 localStorage.setItem(this.STORAGE_KEY, this.highScore.toString());
+            } catch {
+                // ignore
             }
         }
     }
@@ -50,7 +65,6 @@ export class DinoGame {
         this.score = 0;
         this.gameOver = false;
         this.frameCount = 0;
-        this.animationFrame = 0;
     }
 
     jump() {
@@ -69,20 +83,18 @@ export class DinoGame {
         return this.width - rightmostObstacle >= this.MIN_OBSTACLE_DISTANCE;
     }
 
+    /** Advance the game by one fixed step. The caller controls timing. */
     tick() {
-        this.animationFrame++;
-        if (this.animationFrame % this.LOGIC_EVERY_N_FRAMES !== 0) {
-            return;
-        }
-
         if (this.gameOver) return;
 
         this.frameCount++;
 
         // Physics
         if (this.isJumping || this.dinoY !== this.GROUND_Y) {
-            this.dinoY += this.dinoVelocity;
-            this.dinoVelocity += this.GRAVITY;
+            // Snap to 6 decimals: 0.4 isn't exact in binary, and without this the
+            // landing step ends at -1e-15 instead of 0, so the dino hovers a row too long.
+            this.dinoY = snap(this.dinoY + this.dinoVelocity);
+            this.dinoVelocity = snap(this.dinoVelocity + this.GRAVITY);
 
             if (this.dinoY >= this.GROUND_Y) {
                 this.dinoY = this.GROUND_Y;
@@ -100,37 +112,20 @@ export class DinoGame {
             .map(x => x - this.OBSTACLE_SPEED)
             .filter(x => x > -2); // Remove obstacles that are off screen
 
-        // Collision detection
-        const dinoHitboxX = 4; // Dino is roughly at x=2 to x=6
-        const dinoHitboxY = this.height - Math.floor(this.dinoY);
-        
-        for (const obsX of this.obstacles) {
-            // Simple collision: if obstacle is within dino X range and dino is on ground
-            if (obsX >= 2 && obsX <= 6 && this.dinoY > -1) { 
-                 // Dino y is negative when jumping (0 is ground)
-                 // In our coord system: 0 is ground. negative is UP.
-                 // Wait, let's fix coordinate system. 
-                 // Let's say y=0 is ground. y increases as we go UP.
-                 // But gravity adds to velocity, velocity adds to Y. 
-                 // If JUMP_FORCE is negative, then Y becomes negative (UP).
-                 // Let's keep: Y=0 is ground, Negative Y is AIR.
-                 
-                 // Collision:
-                 // Obstacle is at Y=0 (ground).
-                 // Dino hits if it's close to ground (e.g. > -1) AND x matches.
-                 
-                 this.gameOver = true;
-                 this.saveHighScore();
-            }
+        // Collision: the dino occupies columns DINO_X..DINO_X+1 on the ground row,
+        // and is airborne once it has risen at least one row (dinoY <= -1).
+        const onGround = this.dinoY > -1;
+        const hit = onGround && this.obstacles.some(
+            x => x >= this.DINO_X && x <= this.DINO_X + 1
+        );
+
+        if (hit) {
+            this.gameOver = true;
+            this.commitHighScore();
+            return;
         }
 
-        if (!this.gameOver) {
-            this.score++;
-            if (this.score > this.highScore) {
-                this.highScore = this.score;
-                // Optimization: only save to localStorage on game over or periodically if needed
-            }
-        }
+        this.score++;
     }
 
     getFrame(): string {
@@ -140,30 +135,19 @@ export class DinoGame {
         const groundY = this.height - 1;
         for(let x=0; x<this.width; x++) grid[groundY][x] = '_';
 
-        // Draw Dino
-        // Dino is at x=2. Y depends on this.dinoY (0 is ground, negative is up)
-        // We need to map this.dinoY to grid coordinates.
-        // groundY is floor. 
-        // Dino foot is at groundY - 1 + this.dinoY (since dinoY is <= 0)
-        
+        // Draw Dino (2 columns wide). dinoY is 0 on the ground and negative in the air.
+        //  O>
+        //  /\
         const dinoFootY = groundY + Math.floor(this.dinoY);
-        const dinoX = 2;
+        const dinoX = this.DINO_X;
 
-        // Simple Dino Art (2x2)
-        //  O
-        // /|\
-        // / \
-        
         if (dinoFootY >= 0 && dinoFootY < this.height) {
-             // Only draw if within bounds
-             if (dinoFootY - 1 >= 0) {
+            if (dinoFootY - 1 >= 0) {
                 grid[dinoFootY - 1][dinoX] = 'O';
-                grid[dinoFootY - 1][dinoX+1] = '>';
-             }
-             if (dinoFootY >= 0) {
-                grid[dinoFootY][dinoX] = '/';
-                grid[dinoFootY][dinoX+1] = '\\';
-             }
+                grid[dinoFootY - 1][dinoX + 1] = '>';
+            }
+            grid[dinoFootY][dinoX] = '/';
+            grid[dinoFootY][dinoX + 1] = '\\';
         }
 
         // Draw Obstacles
@@ -176,11 +160,11 @@ export class DinoGame {
 
         // Render
         let output = grid.map(row => row.join('')).join('\n');
-        output += `\nScore: ${this.score.toString().padEnd(10)} HI: ${this.highScore}`;
+        output += `\nScore: ${this.score.toString().padEnd(10)} HI: ${Math.max(this.score, this.highScore)}`;
         if (this.gameOver) {
-            output += `\n\nGAME OVER! Press 'R' to retry or 'Q' to quit.`;
+            output += `\n\nGAME OVER! Press 'R' or tap to retry, 'Q' to quit.`;
         } else {
-            output += `\n\nControls: SPACE/UP to jump, Q to quit`;
+            output += `\n\nControls: SPACE/UP or tap to jump, Q to quit`;
         }
         
         return output;

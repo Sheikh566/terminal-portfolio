@@ -1,5 +1,8 @@
-import { siteMeta } from "$lib/site-meta";
+import { siteMeta } from "#lib/site-meta.ts";
 import type { LayoutLoad } from "./$types";
+
+// All content is static, so serve prebuilt HTML from the CDN instead of running the Worker per request.
+export const prerender = true;
 
 export const load: LayoutLoad = ({ url }) => {
 	const siteUrl = url.origin;

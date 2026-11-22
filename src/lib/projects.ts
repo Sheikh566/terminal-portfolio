@@ -1,5 +1,17 @@
 export function handleProjects() {
   return `
+- PrtSc made with Swift, ScreenCaptureKit, macOS — Nov 2026
+  • macOS menu bar app that brings GNOME Shell's screenshot UI to the Mac
+  • Selection, Screen and Window captures plus HEVC screencasts at 60 fps
+  • Native macOS 26 Liquid Glass UI, multi-display aware; install via Homebrew
+  URL: https://github.com/sheikh566/PrtSc
+
+- Hourlark made with TypeScript, Cloudflare Workers, D1, React — Oct 2026
+  • Self-hosted Toggl-style time tracker for a single company
+  • One Worker serves the React app and API, with D1 as the database
+  • Runs a 50-person team for $5/month; Google or Cloudflare Access sign-in
+  URL: https://github.com/sheikh566/hourlark
+
 - Magister made with Go, Systems Programming, Open Source — May 2026
   • Open-source offline platform for learning systems programming with automated tests
   • Go test harness validates user processes over TCP/UDP; works with any language
