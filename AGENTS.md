@@ -36,6 +36,18 @@ Before you finish a change, run `yarn check`, `yarn test` and `yarn build`. All 
 - Svelte 5 runes (`$state`, `$props`), not legacy stores/`export let`.
 - Command output is plain text inside a `white-space: pre` block. Line up columns with spaces, and keep lines short enough for the terminal width.
 
+## Versioning: bump on every release
+
+Every change that ships to users (content, features, fixes, dependency upgrades) must bump the SheikhOS version in the same commit. Use semver: patch for fixes and content tweaks, minor for new commands, sections or features, major for a redesign.
+
+The version is hard-coded in three places. Change all three together:
+
+1. `package.json`: `"version"`
+2. `src/lib/help.ts`: the `Welcome to SheikhOS vX.Y.Z` banner
+3. `src/lib/intro.ts`: `SheikhOS vX.Y.Z` on the intro screen. Keep the line's alignment: if the version string changes length, adjust the padding before it.
+
+Check with `grep -rn "SheikhOS v\|\"version\"" src package.json`. All three must match.
+
 ## Adding a command
 
 1. Create `src/lib/<name>.ts` exporting a function that returns a string.

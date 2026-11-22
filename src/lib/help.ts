@@ -1,7 +1,7 @@
 import commands from './commands.json';
 
 export function handleHelp() {
-  let output = 'Welcome to SheikhOS v1.2.0\n\n';
+  let output = 'Welcome to SheikhOS v1.3.0\n\n';
   output += 'Available commands:\n';
   for (const [command, { description, usage }] of Object.entries(commands)) {
     // padEnd never throws, unlike ' '.repeat(n) with a negative n for long entries
